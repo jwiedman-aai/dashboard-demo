@@ -12,11 +12,12 @@ const sr = (base: number, variance = 0.2): number => {
   return Math.round(base * factor * 100) / 100;
 };
 
-// Previous month is ~5-15% different
-const prev = (current: number): number => {
-  seed = (seed * 16807) % 2147483647;
-  const change = 0.85 + seededRandom() * 0.30;
-  return Math.round(current * change * 100) / 100;
+// Previous month spend with intentional directional bias per account
+// Some accounts are growing, some shrinking — makes the demo story richer
+const prevWithBias = (current: number, bias: number): number => {
+  // bias > 1 means current > previous (growth), bias < 1 means shrinkage
+  const jitter = 0.95 + seededRandom() * 0.10;
+  return Math.round((current / bias) * jitter * 100) / 100;
 };
 
 export const mockData: MajorOrg[] = [
@@ -205,25 +206,53 @@ export const mockData: MajorOrg[] = [
   },
 ];
 
-// Backfill previousMonthSpend using seeded random
+// Assign intentional MoM biases to make the data tell a story
+// Engineering growing (1.08), D&A growing fast (1.12), Product stable (1.02),
+// Operations shrinking (0.94), Business Systems stable (1.01),
+// Security growing (1.06), Corporate shrinking (0.92)
+const orgBiases: Record<string, number> = {
+  'engineering': 1.08,
+  'product': 1.02,
+  'operations': 0.94,
+  'business-systems': 1.01,
+  'data-analytics': 1.12,
+  'security-compliance': 1.06,
+  'corporate-services': 0.92,
+};
+
 mockData.forEach(org => {
+  const bias = orgBiases[org.id] ?? 1.0;
   org.tenants.forEach(tenant => {
     tenant.accounts.forEach(account => {
-      account.previousMonthSpend = prev(account.spend);
+      // Add per-account variation around the org bias
+      const accountBias = bias + (seededRandom() * 0.08 - 0.04);
+      account.previousMonthSpend = prevWithBias(account.spend, accountBias);
     });
   });
 });
 
-// Generate 6 months of trend data for any spend value
+// Generate 6 months of trend data for a given spend value
+// Uses a simple hash of the spend value for deterministic-per-context results
 export function generateTrendData(currentSpend: number): { month: string; spend: number }[] {
   const months = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
   const result: { month: string; spend: number }[] = [];
-  let spend = currentSpend * (0.75 + seededRandom() * 0.15);
-  for (let i = 0; i < 6; i++) {
+
+  // Simple hash based on spend to get reproducible but varied trends
+  let h = Math.floor(currentSpend * 7 + 13);
+  const localRandom = () => {
+    h = (h * 16807 + 37) % 2147483647;
+    return (h & 0xffff) / 0xffff;
+  };
+
+  // Start from ~75-85% of current and grow toward it
+  let spend = currentSpend * (0.74 + localRandom() * 0.12);
+  for (let i = 0; i < 5; i++) {
     result.push({ month: months[i], spend: Math.round(spend) });
-    spend *= (0.97 + seededRandom() * 0.12);
+    // Gradual growth with some noise
+    const growthRate = 1.02 + localRandom() * 0.06;
+    spend *= growthRate;
   }
-  // Make the last month match current spend
-  result[5].spend = Math.round(currentSpend);
+  // Last month is always current
+  result.push({ month: months[5], spend: Math.round(currentSpend) });
   return result;
 }

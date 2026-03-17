@@ -18,12 +18,12 @@ function CustomTooltip({ active, payload, totalSpend }: any) {
   const item = payload[0].payload;
   const pct = ((item.spend / totalSpend) * 100).toFixed(1);
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-4 py-3 text-sm">
-      <div className="font-medium text-gray-900 mb-1">{item.name}</div>
-      <div className="text-gray-600">Spend: <span className="font-medium text-gray-900">{formatCurrency(item.spend)}</span></div>
-      <div className="text-gray-600">Share: <span className="font-medium text-gray-900">{pct}%</span></div>
+    <div className="bg-gray-900 text-white rounded-lg shadow-xl px-4 py-3 text-sm">
+      <div className="font-medium mb-1">{item.name}</div>
+      <div className="text-gray-300">Spend: <span className="font-medium text-white">{formatCurrency(item.spend)}</span></div>
+      <div className="text-gray-300">Share: <span className="font-medium text-white">{pct}%</span></div>
       {item.provider && item.provider !== 'Mixed' && (
-        <div className="text-gray-600">Provider: <span className="font-medium text-gray-900">{item.provider}</span></div>
+        <div className="text-gray-300">Provider: <span className="font-medium text-white">{item.provider}</span></div>
       )}
     </div>
   );
@@ -47,8 +47,8 @@ export function MainChart({ data, mode, drillState, onDrillDown }: MainChartProp
             data={data}
             cx="50%"
             cy="50%"
-            innerRadius={80}
-            outerRadius={150}
+            innerRadius={85}
+            outerRadius={145}
             paddingAngle={2}
             dataKey="spend"
             nameKey="name"
@@ -56,6 +56,8 @@ export function MainChart({ data, mode, drillState, onDrillDown }: MainChartProp
             cursor={drillable ? 'pointer' : 'default'}
             label={({ name, percent }: any) => `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`}
             labelLine={{ strokeWidth: 1 }}
+            animationDuration={400}
+            animationEasing="ease-out"
           >
             {data.map((entry) => (
               <Cell key={entry.id} fill={entry.color} stroke="white" strokeWidth={2} />
@@ -70,24 +72,30 @@ export function MainChart({ data, mode, drillState, onDrillDown }: MainChartProp
   return (
     <ResponsiveContainer width="100%" height={380}>
       <BarChart data={data} margin={{ top: 10, right: 30, left: 20, bottom: 40 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
         <XAxis
           dataKey="name"
           tick={{ fontSize: 12, fill: '#6b7280' }}
           angle={-25}
           textAnchor="end"
           height={60}
+          axisLine={{ stroke: '#e5e7eb' }}
+          tickLine={false}
         />
         <YAxis
           tick={{ fontSize: 12, fill: '#6b7280' }}
           tickFormatter={(v) => formatCurrency(v)}
+          axisLine={false}
+          tickLine={false}
         />
-        <Tooltip content={<CustomTooltip totalSpend={totalSpend} />} />
+        <Tooltip content={<CustomTooltip totalSpend={totalSpend} />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
         <Bar
           dataKey="spend"
           cursor={drillable ? 'pointer' : 'default'}
           onClick={handleClick}
-          activeBar={<Rectangle radius={[6, 6, 0, 0]} />}
+          animationDuration={400}
+          animationEasing="ease-out"
+          activeBar={<Rectangle radius={[6, 6, 0, 0]} fillOpacity={0.85} />}
           shape={(props: any) => {
             const item = data.find(d => d.name === props.name);
             return <Rectangle {...props} fill={item?.color ?? '#3b82f6'} radius={[6, 6, 0, 0]} />;

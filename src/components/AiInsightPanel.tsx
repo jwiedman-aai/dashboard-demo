@@ -1,5 +1,5 @@
 import { Sparkles, MessageCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DrillState, Provider } from '../data/types';
 import { generateInsight, getSuggestedQuestions } from '../utils/insights';
 
@@ -11,6 +11,11 @@ interface AiInsightPanelProps {
 export function AiInsightPanel({ drillState, provider }: AiInsightPanelProps) {
   const [activeQuestion, setActiveQuestion] = useState<string | null>(null);
 
+  // Reset active question when context changes
+  useEffect(() => {
+    setActiveQuestion(null);
+  }, [drillState.orgId, drillState.tenantId, provider]);
+
   const insight = generateInsight(drillState, provider);
   const questions = getSuggestedQuestions(drillState);
 
@@ -19,13 +24,13 @@ export function AiInsightPanel({ drillState, provider }: AiInsightPanelProps) {
     : insight;
 
   return (
-    <div className="bg-gradient-to-br from-indigo-50 via-white to-purple-50 rounded-xl border border-indigo-100 shadow-sm p-5">
+    <div className="bg-gradient-to-br from-indigo-50 via-white to-purple-50 rounded-xl border border-indigo-100 shadow-sm p-5 hover:shadow-md transition-shadow">
       <div className="flex items-center gap-2 mb-3">
         <div className="bg-indigo-100 text-indigo-600 p-1.5 rounded-lg">
           <Sparkles size={16} />
         </div>
-        <h3 className="text-sm font-medium text-indigo-900">AI Summary</h3>
-        <span className="text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-medium">
+        <h3 className="text-sm font-semibold text-indigo-900">AI Summary</h3>
+        <span className="text-[10px] bg-indigo-100/80 text-indigo-500 px-1.5 py-0.5 rounded font-medium uppercase tracking-wider">
           Mock
         </span>
       </div>
@@ -41,11 +46,11 @@ export function AiInsightPanel({ drillState, provider }: AiInsightPanelProps) {
             onClick={() => setActiveQuestion(activeQuestion === q ? null : q)}
             className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all ${
               activeQuestion === q
-                ? 'bg-indigo-100 border-indigo-200 text-indigo-700'
-                : 'bg-white border-gray-200 text-gray-600 hover:border-indigo-200 hover:text-indigo-600'
+                ? 'bg-indigo-100 border-indigo-200 text-indigo-700 shadow-sm'
+                : 'bg-white border-gray-200 text-gray-600 hover:border-indigo-200 hover:text-indigo-600 hover:shadow-sm'
             }`}
           >
-            <MessageCircle size={12} />
+            <MessageCircle size={11} />
             {q}
           </button>
         ))}
